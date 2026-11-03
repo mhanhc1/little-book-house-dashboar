@@ -1,0 +1,69 @@
+LITTLE BOOK HOUSE — DASHBOARD TỰ ĐỘNG CẬP NHẬT (NETLIFY + SUPABASE)
+=======================================================================
+
+ĐÃ HOÀN THÀNH
+- Trang public/index.html dựa trên giao diện Dashboard bạn đã xem.
+- Kết nối từ trình duyệt tới Netlify Function (server-side), KHÔNG để lộ khóa service_role.
+- Khi bấm Kết nối, dashboard lấy orders, order_items, books từ Supabase và tự làm mới mỗi 30 giây (khi tab đang mở).
+- Có bộ lọc ngày, tên sách, danh mục, trạng thái đơn, các chỉ số và biểu đồ.
+- Có CSV dự phòng và nút xem DEMO; chưa đăng nhập thì không coi DEMO là doanh thu thật.
+- Không đọc họ tên, số điện thoại, địa chỉ hoặc email khách hàng.
+
+CHƯA THỰC HIỆN ĐƯỢC TRONG TÀI KHOẢN CỦA BẠN
+- Chưa đưa mã nguồn lên Netlify vì chưa có quyền đăng nhập/tích hợp với tài khoản Netlify của bạn.
+- Chưa được cấp khóa bảo mật Supabase (KHÔNG gửi khóa này trong chat).
+- Chưa thể xác minh schema thật của từng bảng do trang quản trị Supabase cần tài khoản.
+- Đã chuẩn bị các cấu trúc dự phòng phổ biến; nếu bảng thực tế khác, chỉnh phần 'profiles' trong netlify/functions/dashboard.js.
+
+CÁCH TRIỂN KHAI ĐỀ XUẤT: TẠO SITE DASHBOARD RIÊNG, GIỮ NGUYÊN SITE BÁN SÁCH
+1. Giải nén bộ file. Tải toàn bộ thư mục Little_Book_House_LIVE_Netlify lên GitHub Repository riêng (private).
+2. Vào app.netlify.com > Add new project / Import an existing project > kết nối GitHub repo này.
+3. Ở Netlify Site configuration > Environment variables, tạo 3 giá trị:
+   - SUPABASE_URL = https://rkbzwslvxtpoelfbwydf.supabase.co
+   - SUPABASE_SERVICE_ROLE_KEY = secret key (sb_secret_) hoặc service_role key (JWT cũ) tại Supabase > Project Settings > API Keys.
+   - DASHBOARD_PASSWORD = mật khẩu mạnh do bạn tự đặt (từ 16 ký tự trở lên).
+   Đặt biến với Scope có Functions. Không đưa các giá trị thật vào .env.example, GitHub, HTML hay chat.
+4. Deploy site. Nếu đã thêm biến sau khi deploy, bấm Trigger deploy / Deploy site lại để áp dụng.
+5. Mở địa chỉ dashboard Netlify mới, nhập DASHBOARD_PASSWORD, bấm Kết nối.
+6. Thử tạo đơn trong website bán sách đang có, kiểm tra có đơn mới xuất hiện trong Supabase > orders và order_items; dashboard sẽ tự cập nhật trong khoảng 30 giây khi còn mở.
+
+CÁCH KHÁC: DÙNG NETLIFY CLI (dành cho máy có Node.js)
+- Mở terminal tại thư mục chứa netlify.toml.
+- npm install -g netlify-cli
+- netlify login
+- netlify init      (chọn tạo site Netlify RIÊNG)
+- Cài 3 biến môi trường trong Netlify UI như trên.
+- netlify deploy --build --prod
+
+KHÔNG NÊN chỉ mở index.html bằng file:/// trên máy hoặc tải 1 HTML lên Netlify Drop.
+Vì API tự động cần Netlify Function ở netlify/functions/dashboard.js được deploy cùng source code.
+
+GIẢI THÍCH CHỈ SỐ
+- Doanh thu đơn đặt: tổng 'total_amount' của đơn hàng, KHÔNG khẳng định đã thanh toán.
+- Nếu không có status/payment_status thực: dashboard hiển thị 'Chưa có trạng thái'.
+- Khi lọc theo tên sách/danh mục, doanh thu tính theo dòng sản phẩm tương ứng.
+- Không có giá vốn -> không hiển thị lợi nhuận.
+- Ngày thể hiện theo chuỗi YYYY-MM-DD của 'created_at' đang lưu. Với UTC timestamp, phân loại
+  ngày/tháng cần chuẩn hóa theo múi giờ Việt Nam nếu nghiệp vụ cần mốc 00:00 địa phương.
+
+BẢO MẬT
+- Chỉ chức năng Netlify server-side giữ khóa service_role; key đó bỏ qua RLS nên tuyệt đối không nhúng HTML/JS.
+- Mật khẩu dashboard chỉ giữ trong bộ nhớ tab, không ghi localStorage. Ngắt kết nối sẽ xóa dữ liệu quản trị đang hiển thị. Chỉ truy cập qua HTTPS.
+- Endpoint Function đọc dữ liệu không có trường khách hàng, không sửa dữ liệu.
+- Mật khẩu ở mức cơ bản cho dashboard nội bộ nhỏ; nếu nhiều người dùng cần phân quyền, nên dùng Supabase Auth/SSO.
+- Đừng dùng mật khẩu tài khoản Supabase hoặc Netlify làm DASHBOARD_PASSWORD.
+
+KIỂM TRA LỖI
+- 503: thiếu biến môi trường Netlify hoặc cần deploy lại.
+- 401: mật khẩu không chính xác.
+- 502 với 'Cột không khớp': một số cột thực tế khác mẫu, cần điều chỉnh profiles.
+- Nếu website không lưu order_items, doanh số đơn vẫn có thể có nhưng lượng sách bán không đầy đủ.
+- Nếu Function có lỗi, xem Netlify > Logs & metrics > Functions.
+- Nếu dữ liệu được đọc đúng nhưng dashboard vẫn trống, kiểm tra bộ lọc ngày/trạng thái.
+
+ĐÂY LÀ GÓI TRIỂN KHAI; KHÔNG PHẢI LINK WEBSITE LIVE ĐÃ TRIỂN KHAI.
+
+KIỂM TRA CẤU TRÚC BẢNG NẾU CẦN
+- Mở Supabase > SQL Editor, chạy file KIEM_TRA_COT_SUPABASE.sql (chỉ đọc cấu trúc).
+- Kiểm tra bảng books, orders, order_items có cột đúng như dashboard không.
+- Truy vấn này không trả lại dữ liệu khách hàng hay khóa API.
